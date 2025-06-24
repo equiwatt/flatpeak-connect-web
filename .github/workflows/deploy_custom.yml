@@ -2,6 +2,8 @@ name: Deploy Custom Image
 
 on:
   push:
+    branches:
+      - feature/custom-time-input
 
 env:
   IMAGE: tariff-connect-custom
