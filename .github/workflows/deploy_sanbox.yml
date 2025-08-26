@@ -1,0 +1,31 @@
+name: Deploy Flatpeak UI Sandbox
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+permissions:
+  id-token: write # This is required for oidc
+  contents: read # This is required for actions/checkout
+  actions: read # This is required for nrwl/nx-set-shas
+  packages: read
+
+env:
+  CI: true
+
+jobs:
+  build-test-and-deploy:
+    uses: ./.github/workflows/reusable-image-push.yml
+    with:
+      azure-region: uksouth
+      github_ref: ${{ github.event.pull_request.head.sha }}
+      stage: sandbox
+    secrets:
+      azure_client_id: ${{ secrets.AZURE_CLIENT_ID_SANDBOX }}
+      azure_tenant_id: ${{ secrets.AZURE_TENANT_ID }}
+      azure_subscription_id: ${{ secrets.AZURE_SUBSCRIPTION_ID_SANDBOX }}
+      acr_repo_server: ${{ secrets.AZURE_CONTAINER_REGISTRY_SANDBOX }}
+      app_name: ${{ secrets.APP_NAME_SANDBOX }}
+      resource_group: ${{ secrets.RESOURCE_GROUP_SANDBOX }}
+

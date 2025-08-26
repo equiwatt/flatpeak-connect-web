@@ -1,0 +1,93 @@
+name: 🏗 Build Flatpeak UI Docker Image & 🚀 Push
+
+on:
+  workflow_call:
+    inputs:
+      azure-region:
+        type: string
+        description: 'Azure region'
+        required: true
+        default: 'ukwest'
+      github_ref:
+        type: string
+        description: 'GitHub ref to checkout'
+        required: true
+      stage:
+        type: string
+        description: 'Stage to deploy to'
+        required: true
+        default: 'sandbox'
+
+    secrets:
+      azure_client_id:
+        description: 'Azure AD client id'
+        required: true
+      azure_tenant_id:
+        description: 'Azure tenant id'
+        required: true
+      azure_subscription_id:
+        description: 'Azure subscription id for stage'
+        required: true
+      acr_repo_server:
+        description: 'ACR server'
+        required: true
+      app_name:
+        description: 'App name'
+        required: true
+      resource_group:
+        description: 'Resource group name'
+        required: true
+
+jobs:
+  build-test-and-deploy:
+    name: 🏗 Build Tenant API Docker Image & 🚀 Push
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.github_ref }}
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          registry-url: 'https://npm.pkg.github.com'
+
+      - name: Azure CLI Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.azure_client_id }}
+          tenant-id: ${{ secrets.azure_tenant_id }}
+          subscription-id: ${{ secrets.azure_subscription_id }}
+
+      - name: Get version tag
+        id: version
+        run: |
+          VERSION=${{ inputs.stage }}-latest
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Log in to Azure Container Registry
+        run: az acr login --name  ${{ secrets.acr_repo_server }}
+
+      - name: Build Docker Image
+        run: |
+          docker build -t flatpeak-ui:$VERSION -f Dockerfile .
+
+      - name: Tag Docker Image
+        run: |
+          IMAGE_URI="${{ secrets.acr_repo_server }}/flatpeak-ui:$VERSION"
+          docker tag flatpeak-ui:$VERSION $IMAGE_URI
+
+      - name: Push Docker Image to Azure ACR
+        run: |
+          docker push ${{ secrets.acr_repo_server }}/flatpeak-ui:$VERSION
+
+      - name: Image Pushed
+        run: echo "Docker image latest version ${{ env.VERSION }} pushed to ACR"
+
+      # - name: Update Container App
+      #   run: |
+      #     az containerapp update -n ${{ secrets.app_name }} -g ${{ secrets.resource_group }} --image ${{ secrets.acr_repo_server }}/flatpeak-ui:$VERSION --revision-suffix "rev-${{ github.run_number }}"
