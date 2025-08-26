@@ -88,6 +88,6 @@ jobs:
       - name: Image Pushed
         run: echo "Docker image latest version ${{ env.VERSION }} pushed to ACR"
 
-      # - name: Update Container App
-      #   run: |
-      #     az containerapp update -n ${{ secrets.app_name }} -g ${{ secrets.resource_group }} --image ${{ secrets.acr_repo_server }}/flatpeak-ui:$VERSION --revision-suffix "rev-${{ github.run_number }}"
+      - name: Update Container App
+        run: |
+          az containerapp update -n ${{ secrets.app_name }} -g ${{ secrets.resource_group }} --image ${{ secrets.acr_repo_server }}/flatpeak-ui:$VERSION --revision-suffix "rev-${{ github.run_number }}"
