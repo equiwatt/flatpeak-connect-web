@@ -1,11 +1,13 @@
 name: Deploy Flatpeak UI Production
 
 on:
-  push:
-    branches:
-      - feature/custom-time-input
-      - main
+  pull_request:
+    types: [opened, synchronize, reopened]
   workflow_dispatch:
+
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   id-token: write # This is required for oidc
